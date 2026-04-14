@@ -1,0 +1,15 @@
+{
+  "name": "医療事務メモ帳",
+  "short_name": "医療事務",
+  "description": "医療事務向けメモ帳・2026年改定検索・施設基準フィルター・印刷",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f1729",
+  "theme_color": "#0f1729",
+  "orientation": "portrait",
+  "lang": "ja",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
