@@ -1,5 +1,5 @@
-const CACHE = 'medical-app-v3';
-const ASSETS = ['./','./index.html','./manifest.json'];
+const CACHE = 'medical-app-v4';
+const ASSETS = ['./','./index.html','./manifest.json','./sync.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
