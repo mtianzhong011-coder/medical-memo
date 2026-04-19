@@ -665,7 +665,7 @@ async function callAI(prompt) {
                                                 : t.includes('引き上げ')||t.includes('増点') ? 'up'
                                                                : t.includes('引き下げ')||t.includes('減点') ? 'down' : 'note';
                                                                    const title = t.split(/[　\s]/)[0].slice(0,15);
-                                                                       items.push({type, title, body:t, keywords:[], point_change:''});
+                                                                       items.push({type, title, summary:t, body:t, keywords:[], point_change:''});
                                                                          }
                                                                            return JSON.stringify(items);
 }
