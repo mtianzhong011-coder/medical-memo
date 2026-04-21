@@ -1,4 +1,4 @@
-const CACHE = 'medical-app-v4';
+const CACHE = 'medical-app-v5';
 const ASSETS = ['./','./index.html','./manifest.json','./sync.js'];
 
 self.addEventListener('install', e => {
