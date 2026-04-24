@@ -30,7 +30,7 @@
     .then(function(r){return r.json();})
     .then(function(j){
       if(j.id)cb(j.id,null);
-      else cb(null,'アップロード失敗');
+      else cb(null,j.message||'アップロード失敗');
     })
     .catch(function(e){cb(null,e.message||'通信エラー');});
   }
@@ -122,7 +122,7 @@
 
     function btn(t,fn){
       var b=document.createElement('button');
-      b.textContent=t;b.onclick=fn;panel.appendChild(b);
+      b.innerHTML=t;b.onclick=fn;panel.appendChild(b);
     }
 
     btn('&#x1F4F7; QRコードで転送',function(){
