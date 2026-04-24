@@ -23,16 +23,14 @@
     fetch('https://api.github.com/gists',{
       method:'POST',
       headers:{'Content-Type':'application/json','Accept':'application/vnd.github+json'},
-      body:JSON.stringify({
-        description:'医療事務メモ帳 同期データ',
-        public:false,
+      body:JSON.stringify({description:'医療事務メモ帳 同期',public:false,
         files:{'医療メモ.json':{content:data}}
       })
     })
     .then(function(r){return r.json();})
     .then(function(j){
       if(j.id)cb(j.id,null);
-      else cb(null,'アップロード失敗: '+JSON.stringify(j).slice(0,80));
+      else cb(null,'アップロード失敗');
     })
     .catch(function(e){cb(null,e.message||'通信エラー');});
   }
@@ -47,10 +45,8 @@
       if(!files){cb(null,'データが見つかりません');return;}
       var key=Object.keys(files)[0];
       var content=files[key].content;
-      try{
-        var d=JSON.parse(content);
-        cb(d,null);
-      }catch(e){cb(null,'パースエラー');}
+      try{var d=JSON.parse(content);cb(d,null);}
+      catch(e){cb(null,'パースエラー');}
     })
     .catch(function(e){cb(null,e.message||'通信エラー');});
   }
@@ -62,8 +58,7 @@
       history.replaceState(null,'',location.pathname);
       fetchFromGist(gistId,function(d,err){
         if(err){alert('同期エラー: '+err);return;}
-        if(Array.isArray(d)&&confirm(d.length+'件のメモを同期しますか?
-現在のデータは上書きされます')){
+        if(Array.isArray(d)&&confirm(d.length+'件のメモを同期しますか? 現在のデータは上書きされます')){
           localStorage.setItem('med_main',JSON.stringify(d));
           location.reload();
         }
@@ -77,8 +72,7 @@
       if(window.LZString){json=LZString.decompressFromEncodedURIComponent(encoded);}
       if(!json){try{json=decodeURIComponent(atob(encoded));}catch(e2){}}
       var d2=JSON.parse(json);
-      if(Array.isArray(d2)&&confirm(d2.length+'件のメモを同期しますか?
-現在のデータは上書きされます')){
+      if(Array.isArray(d2)&&confirm(d2.length+'件のメモを同期しますか? 現在のデータは上書きされます')){
         localStorage.setItem('med_main',JSON.stringify(d2));
         history.replaceState(null,'',location.pathname);
         location.reload();
@@ -118,38 +112,41 @@
     document.head.appendChild(s);
 
     var f=document.createElement('button');
-    f.className='sfab';f.innerHTML='\uD83D\uDD04';f.title='\u30C7\u30FC\u30BF\u540C\u671F';
+    f.className='sfab';
+    f.innerHTML='&#x1F504;';
+    f.title='データ同期';
 
     var panel=document.createElement('div');
     panel.className='sp';
-    panel.innerHTML='<h4>\uD83D\uDCF1 \u30C7\u30D0\u30A4\u30B9\u9593\u540C\u671F</h4>';
+    panel.innerHTML='<h4>&#x1F4F1; デバイス間同期</h4>';
 
-    function btn(t,fn){var b=document.createElement('button');b.textContent=t;b.onclick=fn;panel.appendChild(b);}
+    function btn(t,fn){
+      var b=document.createElement('button');
+      b.textContent=t;b.onclick=fn;panel.appendChild(b);
+    }
 
-    btn('\uD83D\uDCF7 QR\u30B3\u30FC\u30C9\u3067\u8EE2\u9001',function(){
+    btn('&#x1F4F7; QRコードで転送',function(){
       panel.classList.remove('o');
-      loadScript(LZS,function(){
-        loadScript(QRCDN,function(){showQR();});
-      });
+      loadScript(LZS,function(){loadScript(QRCDN,function(){showQR();});});
     });
 
-    btn('\uD83D\uDCCB \u540C\u671FURL\u3092\u30B3\u30D4\u30FC',function(){
+    btn('&#x1F4CB; 同期URLをコピー',function(){
       loadScript(LZS,function(){
         var url=getSyncURL();
-        navigator.clipboard.writeText(url).then(function(){
-          alert('\u2705 \u30B3\u30D4\u30FC\u3057\u307E\u3057\u305F!\n\u30B9\u30DE\u30DB\u306E\u30D6\u30E9\u30A6\u30B6\u306B\u8CBC\u308A\u4ED8\u3051\u3066\u958B\u304F\u3068\u30E1\u30E2\u304C\u540C\u671F\u3055\u308C\u307E\u3059');
-        }).catch(function(){prompt('URL:',url);});
+        navigator.clipboard.writeText(url)
+          .then(function(){alert('✅ コピーしました!');});
       });
     });
 
-    btn('\u2B07\uFE0F JSON\u30A8\u30AF\u30B9\u30DD\u30FC\u30C8',function(){
+    btn('&#x2B07;&#xFE0F; JSONエクスポート',function(){
       var blob=new Blob([localStorage.getItem('med_main')||'[]'],{type:'application/json'});
-      var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
       a.download='memo-'+(new Date().toISOString().slice(0,10))+'.json';
       a.click();URL.revokeObjectURL(a.href);
     });
 
-    btn('\u2B06\uFE0F JSON\u30A4\u30F3\u30DD\u30FC\u30C8',function(){
+    btn('&#x2B06;&#xFE0F; JSONインポート',function(){
       var i=document.createElement('input');i.type='file';i.accept='.json';
       i.onchange=function(e){
         var fi=e.target.files[0];if(!fi)return;
@@ -157,10 +154,10 @@
         r.onload=function(ev){
           try{
             var d=JSON.parse(ev.target.result);
-            if(Array.isArray(d)&&confirm(d.length+'\u4EF6\u8AAD\u307F\u8FBC\u307F\u307E\u3059\u3002\u73FE\u5728\u306E\u30C7\u30FC\u30BF\u306F\u4E0A\u66F8\u304D\u3055\u308C\u307E\u3059')){
+            if(Array.isArray(d)&&confirm(d.length+'件読み込みます。現在のデータは上書きされます')){
               localStorage.setItem('med_main',JSON.stringify(d));location.reload();
             }
-          }catch(e){alert('\u30D5\u30A1\u30A4\u30EB\u304C\u6B63\u3057\u304F\u3042\u308A\u307E\u305B\u3093');}
+          }catch(e){alert('ファイルが正しくありません');}
         };r.readAsText(fi);
       };i.click();
     });
@@ -172,20 +169,24 @@
     }
 
     function showQR(){
-      var count=0;try{count=JSON.parse(localStorage.getItem('med_main')||'[]').length;}catch(e){}
+      var count=0;
+      try{count=JSON.parse(localStorage.getItem('med_main')||'[]').length;}catch(e){}
       loadScript(LZS,function(){
         var url=getSyncURL();
         if(url.length<=2500){
           renderQROverlay(url,count,false);
         }else{
           var o=makeOverlay();
-          o.innerHTML='<div class="qr-box"><h3>\uD83D\uDCE4 \u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u4E2D...</h3>'+
-            '<div class="qr-spin">\u30E1\u30E2 '+count+'\u4EF6\u3092GitHub Gist\u306B\u4FDD\u5B58\u3057\u3066\u3044\u307E\u3059</div>'+
-            '<p class="qr-note">Wi-Fi\u74B0\u5883\u3067\u306F\u6570\u79D2\u304B\u304B\u308B\u5834\u5408\u304C\u3042\u308A\u307E\u3059</p></div>';
+          o.innerHTML='<div class="qr-box"><h3>&#x1F4E4; アップロード中...</h3>'+
+            '<div class="qr-spin">メモ '+count+'件をGitHub Gistに保存中</div>'+
+            '<p class="qr-note">Wi-Fi環境では数秒かかる場合があります</p></div>';
           document.body.appendChild(o);
           uploadToGist(function(gistId,err){
             document.body.removeChild(o);
-            if(err){alert('\uD83D\uDEA8 \u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u5931\u6557\n'+err+'\n\nJSON\u30A8\u30AF\u30B9\u30DD\u30FC\u30C8/\u30A4\u30F3\u30DD\u30FC\u30C8\u3092\u304A\u4F7F\u3044\u304F\u3060\u3055\u3044');return;}
+            if(err){
+              alert('アップロード失敗: '+err+'\n\nJSONエクスポート/インポートをお使いください');
+              return;
+            }
             var gistUrl=location.origin+location.pathname+'#gist='+gistId;
             renderQROverlay(gistUrl,count,true);
           });
@@ -195,15 +196,13 @@
 
     function renderQROverlay(url,count,isGist){
       var o=makeOverlay();
-      var note=isGist
-        ?'GitHub Gist\u7D4C\u7531\u3067\u8EE2\u9001 (\u30C7\u30FC\u30BF\u306F\u30AF\u30E9\u30A6\u30C9\u306B\u4E00\u6642\u4FDD\u5B58)'
-        :'\u76F4\u63A5\u8EE2\u9001';
+      var note=isGist?'GitHub Gist経由 (クラウドに一時保存)':'直接転送';
       o.innerHTML='<div class="qr-box">'+
-        '<h3>\uD83D\uDCF7 QR\u30B3\u30FC\u30C9\u3092\u30B9\u30AD\u30E3\u30F3</h3>'+
-        '<p>\u30B9\u30DE\u30DB\u306E\u30AB\u30E1\u30E9\u3067\u8AAD\u307F\u53D6\u308B\u3068<br>\u30E1\u30E2 '+count+'\u4EF6\u304C\u540C\u671F\u3055\u308C\u307E\u3059</p>'+
+        '<h3>&#x1F4F7; QRコードをスキャン</h3>'+
+        '<p>スマホのカメラで読み取ると<br>メモ '+count+'件が同期されます</p>'+
         '<div class="qr-canvas" id="qr-render"></div>'+
         '<p class="qr-note">'+note+'</p>'+
-        '<br><button class="qr-close">\u9583\u3058\u308B</button></div>';
+        '<br><button class="qr-close">閃じる</button></div>';
       o.querySelector('.qr-close').onclick=function(){document.body.removeChild(o);};
       document.body.appendChild(o);
       try{
@@ -212,7 +211,9 @@
           colorDark:'#000000',colorLight:'#ffffff',
           correctLevel:QRCode.CorrectLevel.M
         });
-      }catch(e){document.getElementById('qr-render').innerHTML='<p style="color:red;font-size:12px">QR\u751F\u6210\u5931\u6557</p>';}
+      }catch(e){
+        document.getElementById('qr-render').innerHTML='<p style="color:red">QR生成失敗</p>';
+      }
     }
 
     f.onclick=function(e){e.stopPropagation();panel.classList.toggle('o');};
