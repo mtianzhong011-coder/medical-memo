@@ -751,7 +751,7 @@ function saveKaitei(){
   checked.forEach(chk=>{
     const idx=parseInt(chk.id.replace('kchk-',''));const item=kItems[idx];if(!item)return;
     data.unshift({id:genId(),cat:'kaitei',title:`【2026改定】${item.title}`,
-      body:`種別: ${TL[item.type]||item.type}\n${item.point_change?'点数変更: '+item.point_change+'\n':''}${item.body}\n\n${item.detail||''}\n\n対応: ${item.action_needed||''}`,
+      body:`${item.summary||''}\n\n${item.point_change?'点数変更: '+item.point_change+'\n':''}${item.detail?'[詳細]\n'+item.detail+'\n\n':''}対応: ${item.action_needed||''}(種別: ${TL[item.type]||item.type})`,
       tags:['2026改定','令和8年度',...(item.keywords||[]).slice(0,2)],date:new Date().toISOString().slice(0,10)});
   });
   save();alert(checked.length+'件をメモ帳に保存しました。');
