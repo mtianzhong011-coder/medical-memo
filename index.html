@@ -830,7 +830,7 @@ async function runFacExtract(){
   const prompt=`診療報酬専門家として、以下の「自院の届出プロファイル（有床病院）」と「通知・Q&A資料（${docType}）」を照合し、自院に関係する内容のみをJSON形式で抽出してください。前後に文字を含めないこと。\n\n【届出プロファイル】\n${prof}\n\n【通知・Q&A資料】\n${noticeText.slice(0,6000)}\n\n[\n{"title":"見出し・問番号","relevance":"critical|high|medium","related_facility":"関係する届出名","reason":"関係理由（1〜2文）","content":"Q&Aの内容（問と答えの形式で要約）","action":"医療事務として取るべき対応（1〜2文）"}\n]\ncritical=算定可否・届出要件に直接影響, high=算定方法・書類に影響, medium=解釈明確化。自院に無関係なものは除外。最大20件。`;
   try{
     const text = await callAI(prompt);
-    facResults=JSON.parse(text);
+    facResults=JSON.parse(text);facResults=facResults.map(function(r){return Object.assign({},r,{relevance:(r.relevance||"").toLowerCase().trim()});});
     facFilterV='all';
     const badge=document.getElementById('fac-badge');
     badge.style.display='inline';badge.textContent=facResults.length;
@@ -852,7 +852,7 @@ function renderFacResults(){
   const crit=facResults.filter(r=>r.relevance==='critical');
   const high=facResults.filter(r=>r.relevance==='high');
   const med=facResults.filter(r=>r.relevance==='medium');
-  const items=facFilterV==='all'?[...crit,...high,...med]:facResults.filter(r=>r.relevance===facFilterV);
+  const allSorted=[...crit,...high,...med];const items=facFilterV==='all'?(allSorted.length?allSorted:facResults):facResults.filter(r=>r.relevance===facFilterV);
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
     <div style="font-size:15px;font-weight:700;color:var(--t-fac-text)">抽出結果</div>
     <div style="font-size:12px;background:rgba(167,139,250,.12);color:#a78bfa;padding:4px 12px;border-radius:20px;border:.5px solid rgba(167,139,250,.22)">${facResults.length}件 関係あり</div>
