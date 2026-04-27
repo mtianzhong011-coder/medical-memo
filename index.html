@@ -733,7 +733,7 @@ function renderKCards(){
   document.getElementById('kai-frow').innerHTML=`<button class="fbtn f-all${kFilterV==='all'?' fa':''}" onclick="setKF('all',this)">すべて(${kItems.length})</button>`+
     ['new','up','down','del','note'].filter(t=>types.includes(t)).map(t=>`<button class="fbtn f-${t==='down'?'dn':t==='note'?'nt':t}${kFilterV===t?' fa':''}" onclick="setKF('${t}',this)">${TL[t]}(${kItems.filter(i=>i.type===t).length})</button>`).join('');
   if(!items.length){document.getElementById('kai-cards').innerHTML='<div class="empty"><span class="empty-icon">🔍</span>該当なし</div>';return;}
-  document.getElementById('kai-cards').innerHTML=items.map((item,idx)=>{
+  document.getElementById('kai-cards').innerHTML=items.map((item,idx)=>{const ki=kItems.indexOf(item);
     const tc=TC[item.type]||'rt-nt';
     const kws=(item.keywords||[]).map(k=>`<span class="rtag ${tc}">${esc(k)}</span>`).join('');
     const pt=item.point_change?`<span class="rtag ${tc}">${esc(item.point_change)}</span>`:'';
@@ -741,7 +741,7 @@ function renderKCards(){
     const det=item.detail?`<div class="rc-det">${esc(item.detail)}</div>`:'';
     const sum=hlT(esc(item.summary),item.type);
     return `<div class="rcard ${item.type||'note'}">
-      <div class="rc-title">${esc(item.title)}<input type="checkbox" id="kchk-${idx}" style="flex-shrink:0;width:18px;height:18px;accent-color:#34d399"></div>
+      <div class="rc-title">${esc(item.title)}<input type="checkbox" id="kchk-${ki}" style="flex-shrink:0;width:18px;height:18px;accent-color:#34d399"></div>
       <div style="margin-bottom:7px"><span class="rtag ${tc}">${TL[item.type]||item.type}</span>${pt}${kws}</div>
       <div class="rc-sum">${sum}</div>${det}${act}
     </div>`;
