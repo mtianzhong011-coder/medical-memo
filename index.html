@@ -292,6 +292,7 @@ select option{background:#1a2540}
   <p class="kai-hint">令和8年度（2026年6月1日施行）改定データで分析</p>
   <div id="kai-result" style="display:none">
     <div class="frow" id="kai-frow"></div>
+    <div style="padding:6px 0 10px"><input type="text" id="kai-search" placeholder="🔍 抽出結果を絞り込む..." style="width:100%;box-sizing:border-box;padding:8px 12px;border:1.5px solid #334155;border-radius:8px;background:#1e293b;color:#e8edf8;font-size:14px" oninput="renderKCards()"></div>
     <div id="kai-cards"></div>
     <button class="save-checked-btn" onclick="saveKaitei()">チェック項目をメモ帳へ保存</button>
   </div>
@@ -653,6 +654,7 @@ function addKaiChip(){
   c.addEventListener('click',function(){c.classList.toggle('on');saveKChips();if(kItems.length)renderKCards();});
   document.getElementById('kai-chips').appendChild(c);document.getElementById('kai-kw').value='';
   saveKChips();
+  if(kItems.length){var ks=document.getElementById('kai-search');if(ks){ks.value=v;document.getElementById('kai-result').style.display='block';renderKCards();}}
 }
 const D2026=`【令和8年度診療報酬改定 主要変更点】施行：2026年6月1日
 ■初診料・再診料 初診料291点（変更なし）。再診料75点→76点に引き上げ。物価対応料が別途新設。初診+2点・再診+2点が加算（全医療機関届出不要、令和9年度は4点・4点）。
@@ -726,7 +728,7 @@ async function runKaitei(){
 }
 
 function renderKCards(){
-  const activeKws=[...document.querySelectorAll('#kai-chips .chip.on')].map(c=>c.dataset.v);const base=kFilterV==='all'?kItems:kItems.filter(i=>i.type===kFilterV);const items=activeKws.length?base.filter(function(i){var t=[i.title,i.summary,i.detail,i.action_needed].concat(i.keywords||[]).join(' ');return activeKws.some(function(kw){return t.indexOf(kw)>=0;});}):base;
+  const q=(document.getElementById('kai-search')?.value||'').trim();const base=kFilterV==='all'?kItems:kItems.filter(i=>i.type===kFilterV);const items=q?base.filter(function(i){var tx=[i.title,i.summary,i.detail,i.action_needed].concat(i.keywords||[]).join('');return tx.indexOf(q)>=0;}):base;
   const types=[...new Set(kItems.map(i=>i.type))];
   document.getElementById('kai-frow').innerHTML=`<button class="fbtn f-all${kFilterV==='all'?' fa':''}" onclick="setKF('all',this)">すべて(${kItems.length})</button>`+
     ['new','up','down','del','note'].filter(t=>types.includes(t)).map(t=>`<button class="fbtn f-${t==='down'?'dn':t==='note'?'nt':t}${kFilterV===t?' fa':''}" onclick="setKF('${t}',this)">${TL[t]}(${kItems.filter(i=>i.type===t).length})</button>`).join('');
