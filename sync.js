@@ -18,23 +18,6 @@
     return location.origin+location.pathname+'#sync='+enc;
   }
 
-  function uploadToGist(cb){
-    var data=localStorage.getItem('med_main')||'[]';
-    fetch('https://api.github.com/gists',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/vnd.github+json'},
-      body:JSON.stringify({description:'医療事務メモ帳 同期',public:false,
-        files:{'医療メモ.json':{content:data}}
-      })
-    })
-    .then(function(r){return r.json();})
-    .then(function(j){
-      if(j.id)cb(j.id,null);
-      else cb(null,j.message||'アップロード失敗');
-    })
-    .catch(function(e){cb(null,e.message||'通信エラー');});
-  }
-
   function fetchFromGist(gistId,cb){
     fetch('https://api.github.com/gists/'+gistId,{
       headers:{'Accept':'application/vnd.github+json'}
@@ -53,6 +36,43 @@
 
   function checkSyncHash(){
     var h=location.hash;
+
+    if(h.indexOf('#c=')===0){
+      history.replaceState(null,'',location.pathname);
+      var raw=h.slice(3);
+      var sep1=raw.indexOf('/');
+      var sep2=raw.indexOf('/',sep1+1);
+      if(sep1<0||sep2<0)return;
+      var n=parseInt(raw.slice(0,sep1));
+      var total=parseInt(raw.slice(sep1+1,sep2));
+      var chunkData=raw.slice(sep2+1);
+      if(isNaN(n)||isNaN(total)||!chunkData)return;
+      var stKey='sync_chunks_'+total;
+      var chunks;
+      try{chunks=JSON.parse(sessionStorage.getItem(stKey)||'{}');}catch(e){chunks={};}
+      chunks[n]=chunkData;
+      sessionStorage.setItem(stKey,JSON.stringify(chunks));
+      var received=Object.keys(chunks).length;
+      if(received>=total){
+        sessionStorage.removeItem(stKey);
+        var fullEnc='';
+        for(var i=1;i<=total;i++)fullEnc+=chunks[i]||'';
+        loadScript(LZS,function(){
+          try{
+            var json=LZString.decompressFromEncodedURIComponent(fullEnc);
+            var d=JSON.parse(json);
+            if(Array.isArray(d)&&confirm(d.length+'件のメモを同期しますか? 現在のデータは上書きされます')){
+              localStorage.setItem('med_main',JSON.stringify(d));
+              location.reload();
+            }
+          }catch(e){alert('データの復元に失敗しました');}
+        });
+      }else{
+        alert('QR '+n+'/'+total+' 受信。残り'+(total-received)+'枚スキャンしてください');
+      }
+      return;
+    }
+
     if(h.indexOf('#gist=')===0){
       var gistId=h.slice(6);
       history.replaceState(null,'',location.pathname);
@@ -65,6 +85,7 @@
       });
       return;
     }
+
     if(h.indexOf('#sync=')!==0)return;
     try{
       var encoded=h.slice(6);
@@ -108,7 +129,11 @@
       'color:#e2e8f0;border-radius:8px;cursor:pointer;font-size:13px}'+
       '.qr-close:hover{background:#254d94}'+
       '.qr-spin{color:#93c5fd;font-size:13px;margin:16px 0}'+
-      '.qr-note{font-size:11px;color:#64748b;margin-top:8px}';
+      '.qr-note{font-size:11px;color:#64748b;margin-top:8px}'+
+      '.qr-nav{display:flex;gap:8px;justify-content:center;margin-top:10px}'+
+      '.qr-nav button{padding:7px 16px;background:#1e3a6e;border:1px solid #2d5aa0;'+
+      'color:#e2e8f0;border-radius:8px;cursor:pointer;font-size:12px}'+
+      '.qr-nav button:hover{background:#254d94}';
     document.head.appendChild(s);
 
     var f=document.createElement('button');
@@ -134,7 +159,7 @@
       loadScript(LZS,function(){
         var url=getSyncURL();
         navigator.clipboard.writeText(url)
-          .then(function(){alert('✅ コピーしました!');});
+          .then(function(){alert('コピーしました!');});
       });
     });
 
@@ -174,35 +199,67 @@
       loadScript(LZS,function(){
         var url=getSyncURL();
         if(url.length<=2500){
-          renderQROverlay(url,count,false);
+          renderQROverlay(url,count);
         }else{
-          var o=makeOverlay();
-          o.innerHTML='<div class="qr-box"><h3>&#x1F4E4; アップロード中...</h3>'+
-            '<div class="qr-spin">メモ '+count+'件をGitHub Gistに保存中</div>'+
-            '<p class="qr-note">Wi-Fi環境では数秒かかる場合があります</p></div>';
-          document.body.appendChild(o);
-          uploadToGist(function(gistId,err){
-            document.body.removeChild(o);
-            if(err){
-              alert('アップロード失敗: '+err+'\n\nJSONエクスポート/インポートをお使いください');
-              return;
-            }
-            var gistUrl=location.origin+location.pathname+'#gist='+gistId;
-            renderQROverlay(gistUrl,count,true);
-          });
+          showChunkedQR(count);
         }
       });
     }
 
-    function renderQROverlay(url,count,isGist){
+    function showChunkedQR(count){
+      var data=localStorage.getItem('med_main')||'[]';
+      var enc=LZString.compressToEncodedURIComponent(data);
+      var base=location.origin+location.pathname;
+      var chunkSize=900;
+      var chunks=[];
+      for(var i=0;i<enc.length;i+=chunkSize){
+        chunks.push(enc.slice(i,i+chunkSize));
+      }
+      var total=chunks.length;
+      var current=0;
       var o=makeOverlay();
-      var note=isGist?'GitHub Gist経由 (クラウドに一時保存)':'直接転送';
+      document.body.appendChild(o);
+
+      function render(idx){
+        var chunkUrl=base+'#c='+(idx+1)+'/'+total+'/'+chunks[idx];
+        o.innerHTML='<div class="qr-box">'+
+          '<h3>&#x1F4F7; QRコード '+(idx+1)+' / '+total+'</h3>'+
+          '<p>順番にスキャンしてください<br>'+count+'件 ('+(idx+1)+'/'+total+')</p>'+
+          '<div class="qr-canvas" id="qr-render"></div>'+
+          '<div class="qr-nav">'+
+          (idx>0?'<button id="qr-prev">&#x25C0; 前へ</button>':'')+
+          (idx<total-1?'<button id="qr-next">次へ &#x25B6;</button>':'')+
+          '</div>'+
+          '<p class="qr-note">全'+total+'枚スキャン後に同期完了</p>'+
+          '<button class="qr-close" id="qr-close-btn">閉じる</button></div>';
+        if(document.getElementById('qr-prev'))
+          document.getElementById('qr-prev').onclick=function(){current--;render(current);};
+        if(document.getElementById('qr-next'))
+          document.getElementById('qr-next').onclick=function(){current++;render(current);};
+        document.getElementById('qr-close-btn').onclick=function(){
+          document.body.removeChild(o);
+        };
+        try{
+          new QRCode(document.getElementById('qr-render'),{
+            text:chunkUrl,width:220,height:220,
+            colorDark:'#000000',colorLight:'#ffffff',
+            correctLevel:QRCode.CorrectLevel.L
+          });
+        }catch(e){
+          document.getElementById('qr-render').textContent='QR生成失敗';
+        }
+      }
+      render(0);
+    }
+
+    function renderQROverlay(url,count){
+      var o=makeOverlay();
       o.innerHTML='<div class="qr-box">'+
         '<h3>&#x1F4F7; QRコードをスキャン</h3>'+
         '<p>スマホのカメラで読み取ると<br>メモ '+count+'件が同期されます</p>'+
         '<div class="qr-canvas" id="qr-render"></div>'+
-        '<p class="qr-note">'+note+'</p>'+
-        '<br><button class="qr-close">閃じる</button></div>';
+        '<p class="qr-note">直接転送</p>'+
+        '<button class="qr-close">閉じる</button></div>';
       o.querySelector('.qr-close').onclick=function(){document.body.removeChild(o);};
       document.body.appendChild(o);
       try{
