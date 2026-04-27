@@ -645,12 +645,14 @@ function openM(id){document.getElementById(id).classList.add('open');}
 function closeM(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.modal-ov').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
 
-document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('on')));
+document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',function(){c.classList.toggle('on');if(c.closest('#kai-chips')){saveKChips();if(kItems.length)renderKCards();}}));
+function saveKChips(){var all=[...document.querySelectorAll('#kai-chips .chip')];localStorage.setItem('med_kKeywords',JSON.stringify(all.filter(function(c){return c.dataset.custom;}).map(function(c){return c.dataset.v;})));var st={};all.forEach(function(c){st[c.dataset.v]=c.classList.contains('on');});localStorage.setItem('med_kChipStates',JSON.stringify(st));}
 function addKaiChip(){
   const v=document.getElementById('kai-kw').value.trim();if(!v)return;
-  const c=document.createElement('span');c.className='chip on';c.dataset.v=v;c.textContent=v;
-  c.addEventListener('click',()=>c.classList.toggle('on'));
+  const c=document.createElement('span');c.className='chip on';c.dataset.v=v;c.dataset.custom='1';c.textContent=v;
+  c.addEventListener('click',function(){c.classList.toggle('on');saveKChips();if(kItems.length)renderKCards();});
   document.getElementById('kai-chips').appendChild(c);document.getElementById('kai-kw').value='';
+  saveKChips();
 }
 const D2026=`【令和8年度診療報酬改定 主要変更点】施行：2026年6月1日
 ■初診料・再診料 初診料291点（変更なし）。再診料75点→76点に引き上げ。物価対応料が別途新設。初診+2点・再診+2点が加算（全医療機関届出不要、令和9年度は4点・4点）。
@@ -724,7 +726,7 @@ async function runKaitei(){
 }
 
 function renderKCards(){
-  const items=kFilterV==='all'?kItems:kItems.filter(i=>i.type===kFilterV);
+  const activeKws=[...document.querySelectorAll('#kai-chips .chip.on')].map(c=>c.dataset.v);const base=kFilterV==='all'?kItems:kItems.filter(i=>i.type===kFilterV);const items=activeKws.length?base.filter(function(i){var t=[i.title,i.summary,i.detail,i.action_needed].concat(i.keywords||[]).join(' ');return activeKws.some(function(kw){return t.indexOf(kw)>=0;});}):base;
   const types=[...new Set(kItems.map(i=>i.type))];
   document.getElementById('kai-frow').innerHTML=`<button class="fbtn f-all${kFilterV==='all'?' fa':''}" onclick="setKF('all',this)">すべて(${kItems.length})</button>`+
     ['new','up','down','del','note'].filter(t=>types.includes(t)).map(t=>`<button class="fbtn f-${t==='down'?'dn':t==='note'?'nt':t}${kFilterV===t?' fa':''}" onclick="setKF('${t}',this)">${TL[t]}(${kItems.filter(i=>i.type===t).length})</button>`).join('');
@@ -1000,7 +1002,8 @@ function saveAsHTML(){
 
 
 renderMemo();
-updatePrintPreview();if(kItems.length>0){document.getElementById('kai-result').style.display='block';renderKCards();}
+updatePrintPreview();(function(){var kws=JSON.parse(localStorage.getItem('med_kKeywords')||'[]');var st=JSON.parse(localStorage.getItem('med_kChipStates')||'{}');var cont=document.getElementById('kai-chips');kws.forEach(function(v){var c=document.createElement('span');c.className='chip on';c.dataset.v=v;c.dataset.custom='1';c.textContent=v;c.addEventListener('click',function(){c.classList.toggle('on');saveKChips();if(kItems.length)renderKCards();});cont.appendChild(c);});document.querySelectorAll('#kai-chips .chip').forEach(function(c){if(c.dataset.v in st)c.classList.toggle('on',st[c.dataset.v]);});})();
+if(kItems.length>0){document.getElementById('kai-result').style.display='block';renderKCards();}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 <script src="sync.js"></script>
