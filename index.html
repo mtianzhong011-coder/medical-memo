@@ -719,7 +719,7 @@ async function runKaitei(){
   const prompt=`医療事務の専門家として、以下の2026年改定資料から関心項目に関係する変更点をJSON形式のみで抽出してください。前後に文字を含めないこと。\n\n【関心項目】${interests.join('、')}\n\n【改定資料】${D2026}\n\n[\n{"title":"項目名","type":"new|up|down|del|note","summary":"要約（2〜3文）","detail":"詳細","keywords":["kw1"],"point_change":"例:6点→17点 または空文字","action_needed":"この項目のみに関する医療事務対応（1文。他の項目名・届出名を含めること厳禁）"}\n]\nnew=新設,up=点数増,down=点数減,del=廃止,note=要件変更。最大15件。`;
   try{
     const text = await callAI(prompt);
-    kItems=JSON.parse(text);(function(){var ts=kItems.map(function(i){return i.title||"";});kItems=kItems.map(function(item,i){var an=item.action_needed||"";var bad=ts.some(function(t,j){return j!==i&&t.length>=4&&an.indexOf(t)>=0;});return bad?Object.assign({},item,{action_needed:""}):item;});})();;localStorage.setItem('med_kItems',JSON.stringify(kItems));
+    kItems=JSON.parse(text);(function(){var ts=kItems.map(function(i){return i.title||"";});kItems=kItems.map(function(item,i){var an=item.action_needed||"";var isFac=(item.title||"").indexOf("施設基準")>=0;var bad=ts.some(function(t,j){return j!==i&&t.length>=4&&an.indexOf(t)>=0;})||(!isFac&&an.indexOf("施設基準")>=0);return bad?Object.assign({},item,{action_needed:""}):item;});})();;localStorage.setItem('med_kItems',JSON.stringify(kItems));
     kFilterV='all';
     document.getElementById('kai-result').style.display='block';
     renderKCards();
@@ -755,7 +755,7 @@ function saveKaitei(){
   checked.forEach(chk=>{
     const idx=parseInt(chk.id.replace('kchk-',''));const item=kItems[idx];if(!item)return;
     data.unshift({id:genId(),cat:'kaitei',title:`【2026改定】${item.title}`,
-      body:`[${TL[item.type]||item.type}]${item.point_change?' ▶点数:'+item.point_change:''}\n${item.summary||''}\n\n${item.detail?'▶詳細:\n'+item.detail+'\n\n':''}${item.action_needed?'▶対応: '+item.action_needed:''}`.trimEnd(),
+      body:`[${TL[item.type]||item.type}]${item.point_change?' ▶点数:'+item.point_change:''}\n${item.summary||''}${item.detail?'\n\n▶詳細:\n'+item.detail:''}`.trimEnd(),
       tags:['2026改定','令和8年度',...(item.keywords||[]).slice(0,2)],date:new Date().toISOString().slice(0,10)});
   });
   save();alert(checked.length+'件をメモ帳に保存しました。');
