@@ -754,7 +754,7 @@ function saveKaitei(){
   if(!checked.length){alert('保存する項目にチェックを入れてください');return;}
   checked.forEach(chk=>{
     const idx=parseInt(chk.id.replace('kchk-',''));const item=kItems[idx];if(!item)return;
-    data.unshift({id:genId(),cat:'kaitei',title:`【2026改定】${item.title}`,
+    data.unshift({id:genId(),cat:'kaitei',title:`【#${idx}】${item.title}`,
       body:`[${TL[item.type]||item.type}]${item.point_change?' ▶点数:'+item.point_change:''}\n${item.summary||''}${item.detail?'\n\n▶詳細:\n'+item.detail:''}`.trimEnd(),
       tags:['2026改定','令和8年度',...(item.keywords||[]).slice(0,2)],date:new Date().toISOString().slice(0,10)});
   });
