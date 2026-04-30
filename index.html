@@ -571,7 +571,7 @@ let currentTab='all',currentId=null,kItems=JSON.parse(localStorage.getItem('med_
 
 function save(){localStorage.setItem('med_main',JSON.stringify(data));}
 function saveFac(){localStorage.setItem('med_fac',JSON.stringify(facProfile));}
-function genId(){return Date.now();}
+function genId(){return Date.now()*1000+((genId.n=(genId.n||0)+1)%1000);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function showPage(id,el,label,acc,bg,card,mut,txt){
